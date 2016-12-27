@@ -28,6 +28,11 @@ class ScoreCounter(pygame.sprite.Sprite):
             self.distance = 0
             self._update_score(1)
 
+    def restart(self):
+        self.score = 0
+        self.distance = 0
+        self._update_score(0)
+
     def _update_score(self, score):
         self.score += score
         self.image = self.font.render(str(self.score), True, self.FONT_COLOR)
@@ -67,6 +72,15 @@ class BirdSprite(pygame.sprite.Sprite):
     def jump(self):
         self.is_jumping = True
         self.velocity = BIRD_VELOCITY
+
+    def restart(self):
+        self.current_frame = 0
+        self.image = self.frames[self.current_frame]
+        self.rect = self.image.get_rect()
+        self.rect.x = self.rect.w / 2
+        self.rect.y = (SCREEN_HEIGHT / 2) - (self.rect.h / 2)
+        self.is_jumping = False
+        self.velocity = 0
 
 
 class WallSprite(pygame.sprite.Sprite):
@@ -130,6 +144,12 @@ class WallPair(pygame.sprite.Group):
                 return True
         return False
 
+    def restart(self):
+        for wall in self.sprites():
+            wall.rect.x = SCREEN_WIDTH
+            wall.set_gap(self.next_gap_y, GAP_SIZE)
+        self.next_gap_y = self._generate_gap_y()
+
     def _generate_gap_y(self):
         # TODO: Refactoring
         return random.randint(13, (SCREEN_HEIGHT - 130) / 10) * 10
@@ -156,11 +176,20 @@ class FlappyBird(object):
             self._update(det)
             self._draw()
 
+    def restart(self):
+        if self.the_end:
+            self.score.restart()
+            self.bird.restart()
+            self.walls.restart()
+            self.the_end = False
+
     def _handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     self.bird.jump()
+                elif event.key == pygame.K_ESCAPE:
+                    self.restart()
             elif event.type == pygame.QUIT:
                 sys.exit()
 
