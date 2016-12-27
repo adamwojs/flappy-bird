@@ -3,6 +3,11 @@ import sys, pygame, random
 FRAMES_PER_SECOND = 30
 SCREEN_WIDTH = 400
 SCREEN_HEIGHT = 700
+GAP_SIZE = 100
+BIRD_GRAVITY = 1
+BIRD_VELOCITY = 12
+WALL_SPEED = 10
+WALL_WIDTH = 100
 
 
 class ScoreCounter(pygame.sprite.Sprite):
@@ -18,8 +23,8 @@ class ScoreCounter(pygame.sprite.Sprite):
         self._update_score(0)
 
     def update(self, det):
-        self.distance += WallSprite.VELOCITY
-        if self.distance >= SCREEN_WIDTH:
+        self.distance += WALL_SPEED
+        if self.distance >= SCREEN_WIDTH + WALL_WIDTH:
             self.distance = 0
             self._update_score(1)
 
@@ -32,9 +37,6 @@ class ScoreCounter(pygame.sprite.Sprite):
 
 
 class BirdSprite(pygame.sprite.Sprite):
-    GRAVITY = 1
-    VELOCITY = 12
-
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.frames = map(lambda x: pygame.image.load(x).convert_alpha(), [
@@ -46,19 +48,17 @@ class BirdSprite(pygame.sprite.Sprite):
         self.current_frame = 0
         self.image = self.frames[self.current_frame]
         self.rect = self.image.get_rect()
-        self.rect.x = self.rect.w / 2
-        self.rect.y = (SCREEN_HEIGHT / 2) - (self.rect.h / 2)
         self.is_jumping = False
         self.velocity = 0
 
     def update(self, deltat):
         if self.is_jumping:
             self.rect.y -= self.velocity
-            self.velocity -= self.GRAVITY
+            self.velocity -= BIRD_GRAVITY
             if self.velocity == 0:
                 self.is_jumping = False
         else:
-            self.velocity += self.GRAVITY
+            self.velocity += BIRD_GRAVITY
             self.rect.y += self.velocity
 
         self.image = self.frames[self.current_frame]
@@ -66,13 +66,12 @@ class BirdSprite(pygame.sprite.Sprite):
 
     def jump(self):
         self.is_jumping = True
-        self.velocity = self.VELOCITY
+        self.velocity = BIRD_VELOCITY
 
 
 class WallSprite(pygame.sprite.Sprite):
     DIRECTION_TOP = "top"
     DIRECTION_BOTTOM = "bottom"
-    VELOCITY = 11
 
     def __init__(self, direction, init_gap_y, init_gap_size):
         super(WallSprite, self).__init__()
@@ -86,7 +85,7 @@ class WallSprite(pygame.sprite.Sprite):
         if self.rect.x < -self.rect.w:
             self.rect.x = SCREEN_WIDTH
         else:
-            self.rect.x -= self.VELOCITY
+            self.rect.x -= WALL_SPEED
 
     def set_gap(self, gap_y, gap_size):
         self.rect = self.image.get_rect()
@@ -100,29 +99,26 @@ class WallSprite(pygame.sprite.Sprite):
 
 
 class WallPair(pygame.sprite.Group):
-    GAP_SIZE = 75
-
     def __init__(self):
         gap_y = self._generate_gap_y()
 
         super(WallPair, self).__init__([
-            WallSprite(WallSprite.DIRECTION_TOP, gap_y, self.GAP_SIZE),
-            WallSprite(WallSprite.DIRECTION_BOTTOM, gap_y, self.GAP_SIZE)
+            WallSprite(WallSprite.DIRECTION_TOP, gap_y, GAP_SIZE),
+            WallSprite(WallSprite.DIRECTION_BOTTOM, gap_y, GAP_SIZE)
         ])
 
         self.next_gap_y = self._generate_gap_y()
 
     def update(self, daltat):
         super(WallPair, self).update(daltat)
-
         generate_next_gap = False
         for wall in self.sprites():
             if wall.rect.x < -wall.rect.w:
                 wall.rect.x = SCREEN_WIDTH
-                wall.set_gap(self.next_gap_y, self.GAP_SIZE)
+                wall.set_gap(self.next_gap_y, GAP_SIZE)
                 generate_next_gap = True
             else:
-                wall.rect.x -= wall.VELOCITY
+                wall.rect.x -= WALL_SPEED
 
         if generate_next_gap:
             self.next_gap_y = self._generate_gap_y()
