@@ -1,4 +1,4 @@
-import sys, pygame, random
+import os, sys, pygame, random
 
 FRAMES_PER_SECOND = 30
 SCREEN_WIDTH = 400
@@ -8,6 +8,36 @@ BIRD_GRAVITY = 1
 BIRD_VELOCITY = 12
 WALL_SPEED = 10
 WALL_WIDTH = 100
+
+
+class Assets(object):
+    ASSETS_DIR = "assets"
+
+    BACKGROUND = None
+    WALL_TOP = None
+    WALL_BOTTOM = None
+    BIRD_DEAD = None
+    BIRD_FRAMES = None
+
+    @staticmethod
+    def init():
+        print "Loading assets"
+        Assets.BACKGROUND = Assets.load_image("background.png")
+        Assets.WALL_TOP = Assets.load_image("top.png")
+        Assets.WALL_BOTTOM = Assets.load_image("bottom.png")
+        Assets.BIRD_DEAD = Assets.load_image("dead.png")
+        Assets.BIRD_FRAMES = map(lambda x: Assets.load_image(x), [
+            "0.png", "1.png", "2.png"
+        ])
+
+    @staticmethod
+    def load_image(name):
+        fullpath = os.path.join(Assets.ASSETS_DIR, name)
+        print "Loading image: " + fullpath
+        if not os.path.isfile(fullpath):
+            raise IOError("Could not load file: " + fullpath)
+
+        return pygame.image.load(fullpath).convert_alpha()
 
 
 class ScoreCounter(pygame.sprite.Sprite):
@@ -44,16 +74,9 @@ class ScoreCounter(pygame.sprite.Sprite):
 class BirdSprite(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.frames = map(lambda x: pygame.image.load(x).convert_alpha(), [
-            "assets/0.png",
-            "assets/1.png",
-            "assets/2.png"
-        ])
-
-        self.dead_image = pygame.image.load("assets/dead.png").convert_alpha()
 
         self.current_frame = 0
-        self.image = self.frames[self.current_frame]
+        self.image = Assets.BIRD_FRAMES[self.current_frame]
         self.rect = self.image.get_rect()
         self.is_jumping = False
         self.velocity = 0
@@ -68,7 +91,7 @@ class BirdSprite(pygame.sprite.Sprite):
             self.velocity += BIRD_GRAVITY
             self.rect.y += self.velocity
 
-        self.image = self.frames[self.current_frame]
+        self.image = Assets.BIRD_FRAMES[self.current_frame]
         self.current_frame = (self.current_frame + 1) % 3
 
     def jump(self):
@@ -77,7 +100,7 @@ class BirdSprite(pygame.sprite.Sprite):
 
     def restart(self):
         self.current_frame = 0
-        self.image = self.frames[self.current_frame]
+        self.image = Assets.BIRD_FRAMES[self.current_frame]
         self.rect = self.image.get_rect()
         self.rect.x = self.rect.w / 2
         self.rect.y = (SCREEN_HEIGHT / 2) - (self.rect.h / 2)
@@ -85,7 +108,7 @@ class BirdSprite(pygame.sprite.Sprite):
         self.velocity = 0
 
     def set_dead(self):
-        self.image = self.dead_image
+        self.image = Assets.BIRD_DEAD
 
 
 class WallSprite(pygame.sprite.Sprite):
@@ -96,7 +119,7 @@ class WallSprite(pygame.sprite.Sprite):
         super(WallSprite, self).__init__()
 
         self.direction = direction
-        self.image = pygame.image.load("assets/" + self.direction + ".png").convert_alpha()
+        self.image = Assets.WALL_TOP if direction == self.DIRECTION_TOP else Assets.WALL_BOTTOM
         self.rect = self.image.get_rect()
         self.set_gap(init_gap_y, init_gap_size)
 
@@ -161,10 +184,9 @@ class WallPair(pygame.sprite.Group):
 
 
 class FlappyBird(object):
-    def __init__(self):
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-        self.background = pygame.image.load("assets/background.png").convert()
+    def __init__(self, screen):
+        self.screen = screen
+        self.background = Assets.BACKGROUND
 
         self.bird = BirdSprite()
         self.score = ScoreCounter()
@@ -207,7 +229,6 @@ class FlappyBird(object):
         else:
             self.bird.set_dead()
 
-
     def _draw(self):
         self.screen.blit(self.background, (0, 0))
         self.walls.draw(self.screen)
@@ -220,6 +241,8 @@ if __name__ == '__main__':
     pygame.init()
     pygame.font.init()
     pygame.display.set_caption("Flappy Bird")
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    Assets.init()
 
-    app = FlappyBird()
+    app = FlappyBird(screen)
     app.run()
