@@ -50,6 +50,8 @@ class BirdSprite(pygame.sprite.Sprite):
             "assets/2.png"
         ])
 
+        self.dead_image = pygame.image.load("assets/dead.png").convert_alpha()
+
         self.current_frame = 0
         self.image = self.frames[self.current_frame]
         self.rect = self.image.get_rect()
@@ -81,6 +83,9 @@ class BirdSprite(pygame.sprite.Sprite):
         self.rect.y = (SCREEN_HEIGHT / 2) - (self.rect.h / 2)
         self.is_jumping = False
         self.velocity = 0
+
+    def set_dead(self):
+        self.image = self.dead_image
 
 
 class WallSprite(pygame.sprite.Sprite):
@@ -199,6 +204,9 @@ class FlappyBird(object):
             self.walls.update(det)
             self.hud.update(det)
             self.the_end = self.walls.is_collide(self.bird)
+        else:
+            self.bird.set_dead()
+
 
     def _draw(self):
         self.screen.blit(self.background, (0, 0))
