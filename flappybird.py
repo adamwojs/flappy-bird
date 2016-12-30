@@ -184,6 +184,10 @@ class WallPair(pygame.sprite.Group):
 
 
 class FlappyBird(object):
+    STATE_RUNNING = 1
+    STATE_PAUSED = 2
+    STATE_THE_END = 3
+
     def __init__(self, screen):
         self.screen = screen
         self.background = Assets.BACKGROUND
@@ -193,9 +197,11 @@ class FlappyBird(object):
         self.bird_group = pygame.sprite.RenderPlain(self.bird)
         self.walls = WallPair()
         self.hud = pygame.sprite.RenderPlain(self.score)
-        self.the_end = False
+        self.current_state = self.STATE_RUNNING
 
     def run(self):
+        self.current_state = self.STATE_RUNNING
+
         clock = pygame.time.Clock()
         while True:
             det = clock.tick(FRAMES_PER_SECOND)
@@ -204,11 +210,17 @@ class FlappyBird(object):
             self._draw()
 
     def restart(self):
-        if self.the_end:
+        if self.current_state == self.STATE_THE_END:
             self.score.restart()
             self.bird.restart()
             self.walls.restart()
-            self.the_end = False
+            self.current_state = self.STATE_RUNNING
+
+    def pause(self):
+        if self.current_state == self.STATE_RUNNING:
+            self.current_state = self.STATE_PAUSED
+        elif self.current_state == self.STATE_PAUSED:
+            self.current_state = self.STATE_RUNNING
 
     def _handle_events(self):
         for event in pygame.event.get():
@@ -217,16 +229,19 @@ class FlappyBird(object):
                     self.bird.jump()
                 elif event.key == pygame.K_ESCAPE:
                     self.restart()
+                elif event.key == pygame.K_p:
+                    self.pause()
             elif event.type == pygame.QUIT:
                 sys.exit()
 
     def _update(self, det):
-        if not self.the_end:
+        if self.current_state == self.STATE_RUNNING:
             self.bird_group.update(det)
             self.walls.update(det)
             self.hud.update(det)
-            self.the_end = self.walls.is_collide(self.bird)
-        else:
+            if self.walls.is_collide(self.bird):
+                self.current_state = self.STATE_THE_END
+        elif self.current_state == self.STATE_THE_END:
             self.bird.set_dead()
 
     def _draw(self):
